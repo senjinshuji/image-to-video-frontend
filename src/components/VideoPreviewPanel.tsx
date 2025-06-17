@@ -46,8 +46,8 @@ export function VideoPreviewPanel({ veoJob, klingJob, onSelectVideo }: VideoPrev
           <div className="flex flex-col items-center justify-center h-full p-4">
             <XCircle className="w-8 h-8 text-red-500 mb-2" />
             <p className="text-sm text-red-600">Generation failed</p>
-            {job.error && (
-              <p className="text-xs text-gray-500 mt-2 text-center">{job.error}</p>
+            {job.error_message && (
+              <p className="text-xs text-gray-500 mt-2 text-center">{job.error_message}</p>
             )}
           </div>
         );

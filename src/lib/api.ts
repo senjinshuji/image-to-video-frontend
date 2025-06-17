@@ -2,7 +2,7 @@ import axios from 'axios';
 import { mutate } from 'swr';
 
 // API Base URL - Render FastAPI
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Axios instance with default config
 const apiClient = axios.create({
@@ -64,17 +64,20 @@ export interface ImageJob {
 
 export interface VideoJob {
   id: string;
-  image_url: string;
-  motion_text: string;
+  source_image_url: string;
+  motion_prompt: string;
   model: 'veo' | 'kling';
   video_url?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  error?: string;
+  progress?: number;
+  error_message?: string;
   created_at: string;
 }
 
 // API Functions
 export const api = {
+  // Export apiClient for direct use
+  apiClient,
   // Rows
   async getRows() {
     const { data } = await apiClient.get<Row[]>('/rows');
@@ -83,21 +86,12 @@ export const api = {
 
   // Image Jobs
   async createImageJob(prompt: string, imageUrl?: string) {
-    // 直接API Routeを呼ぶ
-    const { data } = await axios.post<{ imageUrl: string; prompt: string }>('/api/generate-image', {
+    const { data } = await apiClient.post<ImageJob>('/image-jobs', {
       prompt,
+      reference_image_url: imageUrl,
       size: '1024x1024'
     });
-    
-    // ImageJob形式に変換
-    const jobId = Date.now().toString();
-    return {
-      id: jobId,
-      prompt: data.prompt,
-      image_url: data.imageUrl,
-      status: 'completed',
-      created_at: new Date().toISOString()
-    } as ImageJob;
+    return data;
   },
 
   async getImageJob(id: string) {
@@ -106,77 +100,25 @@ export const api = {
   },
 
   async rebuildImageJob(id: string, prompt: string) {
-    // 直接新しい画像を生成
-    const { data } = await axios.post<{ imageUrl: string; prompt: string }>('/api/generate-image', {
+    const { data } = await apiClient.post<ImageJob>(`/image-jobs/${id}/rebuild`, {
       prompt,
-      size: '1024x1024'
     });
-    
-    // 新しいImageJobとして返す
-    const jobId = Date.now().toString();
-    return {
-      id: jobId,
-      prompt: data.prompt,
-      image_url: data.imageUrl,
-      status: 'completed',
-      created_at: new Date().toISOString()
-    } as ImageJob;
+    // Invalidate the cache for this job
+    mutate(`/image-jobs/${id}`);
+    return data;
   },
 
   // Video Jobs
   async createVideoJob(imageUrl: string, motionText: string, model: 'veo' | 'kling') {
-    // KLINGの場合は直接API Routeを呼ぶ
-    if (model === 'kling') {
-      const { data } = await axios.post<{ taskId: string; status: string }>('/api/generate-video', {
-        imageUrl,
-        prompt: motionText,
-        duration: 5
-      });
-      // VideoJob形式に変換
-      return {
-        id: data.taskId,
-        image_url: imageUrl,
-        motion_text: motionText,
-        model: 'kling',
-        status: 'pending',
-        created_at: new Date().toISOString()
-      } as VideoJob;
-    }
-    
-    // Veoの場合は従来のバックエンドAPIを使用
     const { data } = await apiClient.post<VideoJob>('/video-jobs', {
-      image_url: imageUrl,
-      motion_text: motionText,
+      source_image_url: imageUrl,
+      motion_prompt: motionText,
       model,
     });
     return data;
   },
 
   async getVideoJob(id: string) {
-    // KLINGのタスクIDパターンをチェック（数値のみで構成される長いID）
-    if (/^\d{15,}$/.test(id)) {
-      const { data } = await axios.get<{
-        taskId: string;
-        status: 'pending' | 'processing' | 'completed' | 'failed';
-        progress?: number;
-        videoUrl?: string;
-        error?: string;
-      }>(`/api/video-status/${id}`);
-      
-      // VideoJob形式に変換
-      return {
-        id: data.taskId,
-        image_url: '',
-        motion_text: '',
-        model: 'kling',
-        video_url: data.videoUrl,
-        status: data.status,
-        error: data.error,
-        created_at: new Date().toISOString()
-      } as VideoJob;
-    }
-    
-    // 通常のVideoJob
     const { data } = await apiClient.get<VideoJob>(`/video-jobs/${id}`);
     return data;
   },

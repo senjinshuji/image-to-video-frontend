@@ -92,8 +92,8 @@ function ImageGenerationContent() {
 
     try {
       setIsAnalyzing(true);
-      const response = await axios.post('/api/analyze-image', {
-        imageUrl: referenceImageUrl
+      const response = await api.apiClient.post('/image-jobs/analyze', {
+        image_url: referenceImageUrl
       });
       
       setYamlContent(response.data.yaml);
@@ -109,7 +109,7 @@ function ImageGenerationContent() {
   const handleGenerateFromYaml = async (yaml: string) => {
     try {
       // Convert YAML to prompt
-      const response = await axios.post('/api/yaml-to-prompt', { yaml });
+      const response = await api.apiClient.post('/image-jobs/yaml-to-prompt', { yaml });
       const prompt = response.data.prompt;
       
       // Close YAML editor
