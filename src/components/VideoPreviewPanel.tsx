@@ -133,7 +133,7 @@ export function VideoPreviewPanel({ veoJob, klingJob, onSelectVideo }: VideoPrev
         </div>
         {veoJob && (
           <div className="text-sm text-gray-500">
-            <p>Motion: {veoJob.motion_text}</p>
+            <p>Motion: {veoJob.motion_prompt}</p>
             <p>Created: {new Date(veoJob.created_at).toLocaleString()}</p>
           </div>
         )}
@@ -152,7 +152,7 @@ export function VideoPreviewPanel({ veoJob, klingJob, onSelectVideo }: VideoPrev
         </div>
         {klingJob && (
           <div className="text-sm text-gray-500">
-            <p>Motion: {klingJob.motion_text}</p>
+            <p>Motion: {klingJob.motion_prompt}</p>
             <p>Created: {new Date(klingJob.created_at).toLocaleString()}</p>
           </div>
         )}
