@@ -106,6 +106,25 @@ export const api = {
 
   // Video Jobs
   async createVideoJob(imageUrl: string, motionText: string, model: 'veo' | 'kling') {
+    // KLINGの場合は直接API Routeを呼ぶ
+    if (model === 'kling') {
+      const { data } = await axios.post<{ taskId: string; status: string }>('/api/generate-video', {
+        imageUrl,
+        prompt: motionText,
+        duration: 5
+      });
+      // VideoJob形式に変換
+      return {
+        id: data.taskId,
+        image_url: imageUrl,
+        motion_text: motionText,
+        model: 'kling',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      } as VideoJob;
+    }
+    
+    // Veoの場合は従来のバックエンドAPIを使用
     const { data } = await apiClient.post<VideoJob>('/video-jobs', {
       image_url: imageUrl,
       motion_text: motionText,
@@ -115,6 +134,30 @@ export const api = {
   },
 
   async getVideoJob(id: string) {
+    // KLINGのタスクIDパターンをチェック（数値のみで構成される長いID）
+    if (/^\d{15,}$/.test(id)) {
+      const { data } = await axios.get<{
+        taskId: string;
+        status: 'pending' | 'processing' | 'completed' | 'failed';
+        progress?: number;
+        videoUrl?: string;
+        error?: string;
+      }>(`/api/video-status/${id}`);
+      
+      // VideoJob形式に変換
+      return {
+        id: data.taskId,
+        image_url: '',
+        motion_text: '',
+        model: 'kling',
+        video_url: data.videoUrl,
+        status: data.status,
+        error: data.error,
+        created_at: new Date().toISOString()
+      } as VideoJob;
+    }
+    
+    // 通常のVideoJob
     const { data } = await apiClient.get<VideoJob>(`/video-jobs/${id}`);
     return data;
   },

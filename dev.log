@@ -1,0 +1,43 @@
+
+> image-to-video-frontend@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.100.23:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1232ms
+ ○ Compiling /api/generate-video ...
+ ✓ Compiled /api/generate-video in 932ms
+(node:47775) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ POST /api/generate-video 200 in 1329ms
+ ✓ Compiled /api/video-status/[taskId] in 216ms
+Error: Route "/api/video-status/[taskId]" used `params.taskId`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at GET (src/app/api/video-status/[taskId]/route.ts:9:26)
+   7 | ) {
+   8 |   try {
+>  9 |     const taskId = params.taskId;
+     |                          ^
+  10 |     
+  11 |     if (!taskId) {
+  12 |       return NextResponse.json(
+ GET /api/video-status/763775768555683926 200 in 688ms
+ POST /api/generate-video 200 in 916ms
+ GET /api/video-status/763775917624791087 200 in 222ms
+ GET /api/video-status/763775917624791087 200 in 251ms
+ GET /api/video-status/763775917624791087 200 in 185ms
+ GET /api/video-status/763775917624791087 200 in 171ms
+ GET /api/video-status/763775917624791087 200 in 187ms
+ GET /api/video-status/763775917624791087 200 in 284ms
+ GET /api/video-status/763775917624791087 200 in 496ms
+ GET /api/video-status/763775917624791087 200 in 171ms
+ GET /api/video-status/763775917624791087 200 in 183ms
+ GET /api/video-status/763775917624791087 200 in 174ms
+ GET /api/video-status/763775917624791087 200 in 172ms
+ GET /api/video-status/763775917624791087 200 in 181ms
+ GET /api/video-status/763775917624791087 200 in 186ms
+ GET /api/video-status/763775917624791087 200 in 212ms
+ GET /api/video-status/763775917624791087 200 in 176ms
