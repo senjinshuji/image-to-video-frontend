@@ -83,11 +83,21 @@ export const api = {
 
   // Image Jobs
   async createImageJob(prompt: string, imageUrl?: string) {
-    const { data } = await apiClient.post<ImageJob>('/image-jobs', {
+    // 直接API Routeを呼ぶ
+    const { data } = await axios.post<{ imageUrl: string; prompt: string }>('/api/generate-image', {
       prompt,
-      image_url: imageUrl,
+      size: '1024x1024'
     });
-    return data;
+    
+    // ImageJob形式に変換
+    const jobId = Date.now().toString();
+    return {
+      id: jobId,
+      prompt: data.prompt,
+      image_url: data.imageUrl,
+      status: 'completed',
+      created_at: new Date().toISOString()
+    } as ImageJob;
   },
 
   async getImageJob(id: string) {
@@ -96,12 +106,21 @@ export const api = {
   },
 
   async rebuildImageJob(id: string, prompt: string) {
-    const { data } = await apiClient.post<ImageJob>(`/image-jobs/${id}/rebuild`, {
+    // 直接新しい画像を生成
+    const { data } = await axios.post<{ imageUrl: string; prompt: string }>('/api/generate-image', {
       prompt,
+      size: '1024x1024'
     });
-    // Invalidate the cache for this job
-    mutate(`/image-jobs/${id}`);
-    return data;
+    
+    // 新しいImageJobとして返す
+    const jobId = Date.now().toString();
+    return {
+      id: jobId,
+      prompt: data.prompt,
+      image_url: data.imageUrl,
+      status: 'completed',
+      created_at: new Date().toISOString()
+    } as ImageJob;
   },
 
   // Video Jobs

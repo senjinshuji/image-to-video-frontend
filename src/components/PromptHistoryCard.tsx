@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { ImageJob } from '@/lib/api';
-import { Clock, CheckCircle, XCircle, Loader2, Copy, Download } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Loader2, Copy, Download, Video } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface PromptHistoryCardProps {
   job: ImageJob;
@@ -13,6 +14,7 @@ interface PromptHistoryCardProps {
 
 export function PromptHistoryCard({ job, onUsePrompt, isActive = false }: PromptHistoryCardProps) {
   const [imageError, setImageError] = useState(false);
+  const router = useRouter();
 
   const getStatusIcon = () => {
     switch (job.status) {
@@ -97,14 +99,27 @@ export function PromptHistoryCard({ job, onUsePrompt, isActive = false }: Prompt
         <p className="text-sm text-gray-700 line-clamp-3">{job.prompt}</p>
       </div>
 
-      {/* Use Prompt Button */}
-      {onUsePrompt && job.status === 'completed' && (
-        <button
-          onClick={() => onUsePrompt(job.prompt)}
-          className="w-full py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors"
-        >
-          Use this prompt
-        </button>
+      {/* Action Buttons */}
+      {job.status === 'completed' && (
+        <div className="flex gap-2">
+          {onUsePrompt && (
+            <button
+              onClick={() => onUsePrompt(job.prompt)}
+              className="flex-1 py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors"
+            >
+              Use this prompt
+            </button>
+          )}
+          {job.image_url && (
+            <button
+              onClick={() => router.push(`/video?image=${encodeURIComponent(job.image_url!)}`)}
+              className="flex-1 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Video className="w-4 h-4" />
+              Generate Video
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

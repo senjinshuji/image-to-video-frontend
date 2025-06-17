@@ -6,7 +6,9 @@ import useSWR from 'swr';
 import { api, fetcher, ImageJob } from '@/lib/api';
 import { PromptEditor } from '@/components/PromptEditor';
 import { PromptHistoryCard } from '@/components/PromptHistoryCard';
+import { YamlEditor } from '@/components/YamlEditor';
 import { ArrowRight, Upload, Link } from 'lucide-react';
+import axios from 'axios';
 
 function ImageGenerationContent() {
   const searchParams = useSearchParams();
@@ -18,6 +20,9 @@ function ImageGenerationContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputMode, setInputMode] = useState<'text' | 'image'>('text');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [showYamlEditor, setShowYamlEditor] = useState(false);
+  const [yamlContent, setYamlContent] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Poll current job status
   const { data: currentJob } = useSWR(
@@ -82,6 +87,42 @@ function ImageGenerationContent() {
     }
   };
 
+  const handleAnalyzeImage = async () => {
+    if (!referenceImageUrl) return;
+
+    try {
+      setIsAnalyzing(true);
+      const response = await axios.post('/api/analyze-image', {
+        imageUrl: referenceImageUrl
+      });
+      
+      setYamlContent(response.data.yaml);
+      setShowYamlEditor(true);
+    } catch (error) {
+      console.error('Failed to analyze image:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleGenerateFromYaml = async (yaml: string) => {
+    try {
+      // Convert YAML to prompt
+      const response = await axios.post('/api/yaml-to-prompt', { yaml });
+      const prompt = response.data.prompt;
+      
+      // Close YAML editor
+      setShowYamlEditor(false);
+      
+      // Generate image with the prompt
+      await handleGenerate(prompt);
+    } catch (error) {
+      console.error('Failed to generate from YAML:', error);
+      // TODO: Show error toast
+    }
+  };
+
   const currentPrompt = jobs.find(j => j.id === currentJobId)?.prompt || '';
 
   return (
@@ -132,7 +173,17 @@ function ImageGenerationContent() {
                       className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                  <button
+                    onClick={handleAnalyzeImage}
+                    disabled={!referenceImageUrl || isAnalyzing}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                  </button>
                 </div>
+                <p className="text-xs text-gray-500">
+                  Enter an image URL and click "Analyze" to generate a YAML description
+                </p>
               </div>
             )}
 
@@ -186,6 +237,17 @@ function ImageGenerationContent() {
           </div>
         </div>
       </div>
+
+      {/* YAML Editor Modal */}
+      {showYamlEditor && (
+        <YamlEditor
+          initialYaml={yamlContent}
+          referenceImage={referenceImageUrl}
+          onGenerate={handleGenerateFromYaml}
+          onCancel={() => setShowYamlEditor(false)}
+          isLoading={isGenerating}
+        />
+      )}
     </div>
   );
 }
