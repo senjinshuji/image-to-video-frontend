@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { api, fetcher, ImageJob } from '@/lib/api';
@@ -8,7 +8,7 @@ import { PromptEditor } from '@/components/PromptEditor';
 import { PromptHistoryCard } from '@/components/PromptHistoryCard';
 import { ArrowRight, Upload, Link } from 'lucide-react';
 
-export default function ImageGenerationPage() {
+function ImageGenerationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rowId = searchParams.get('row');
@@ -187,5 +187,31 @@ export default function ImageGenerationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ImageGenerationPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="h-64 bg-gray-200 rounded-lg"></div>
+                <div className="h-12 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="space-y-4">
+                <div className="h-32 bg-gray-200 rounded-lg"></div>
+                <div className="h-32 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ImageGenerationContent />
+    </Suspense>
   );
 }

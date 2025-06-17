@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { api, fetcher, VideoJob } from '@/lib/api';
@@ -8,7 +8,7 @@ import { VideoPreviewPanel } from '@/components/VideoPreviewPanel';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 
-export default function VideoGenerationPage() {
+function VideoGenerationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const imageUrl = searchParams.get('image');
@@ -21,19 +21,19 @@ export default function VideoGenerationPage() {
   const [selectedVideo, setSelectedVideo] = useState<{ url: string; model: 'veo' | 'kling' } | null>(null);
 
   // Poll job statuses
-  const { data: veoJob } = useSWR(
+  const { data: veoJob } = useSWR<VideoJob>(
     veoJobId ? `/video-jobs/${veoJobId}` : null,
     fetcher,
     {
-      refreshInterval: veoJobId && (!veoJob || veoJob.status === 'processing') ? 3000 : 0,
+      refreshInterval: veoJobId ? 3000 : 0,
     }
   );
 
-  const { data: klingJob } = useSWR(
+  const { data: klingJob } = useSWR<VideoJob>(
     klingJobId ? `/video-jobs/${klingJobId}` : null,
     fetcher,
     {
-      refreshInterval: klingJobId && (!klingJob || klingJob.status === 'processing') ? 3000 : 0,
+      refreshInterval: klingJobId ? 3000 : 0,
     }
   );
 
@@ -190,5 +190,30 @@ export default function VideoGenerationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VideoGenerationPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="space-y-6">
+                <div className="aspect-square bg-gray-200 rounded-lg"></div>
+                <div className="h-32 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="lg:col-span-2">
+                <div className="h-96 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <VideoGenerationContent />
+    </Suspense>
   );
 }

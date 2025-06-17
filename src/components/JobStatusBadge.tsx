@@ -33,6 +33,7 @@ export function JobStatusBadge({
       icon: Clock,
       text: 'Pending',
       className: 'bg-gray-100 text-gray-700',
+      iconClassName: '',
     },
     processing: {
       icon: Loader2,
@@ -44,11 +45,13 @@ export function JobStatusBadge({
       icon: CheckCircle,
       text: 'Completed',
       className: 'bg-green-100 text-green-700',
+      iconClassName: '',
     },
     failed: {
       icon: XCircle,
       text: 'Failed',
       className: 'bg-red-100 text-red-700',
+      iconClassName: '',
     },
   };
 
