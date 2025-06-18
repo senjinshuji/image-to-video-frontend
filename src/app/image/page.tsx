@@ -20,6 +20,8 @@ function ImageGenerationContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputMode, setInputMode] = useState<'text' | 'image'>('text');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
   const [showYamlEditor, setShowYamlEditor] = useState(false);
   const [yamlContent, setYamlContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -88,12 +90,19 @@ function ImageGenerationContent() {
   };
 
   const handleAnalyzeImage = async () => {
-    if (!referenceImageUrl) return;
+    let imageUrl = referenceImageUrl;
+    
+    // If a file is selected, use its base64 data
+    if (referenceImageFile && referenceImagePreview) {
+      imageUrl = referenceImagePreview;
+    }
+    
+    if (!imageUrl) return;
 
     try {
       setIsAnalyzing(true);
       const response = await api.apiClient.post('/image-jobs/analyze', {
-        image_url: referenceImageUrl
+        image_url: imageUrl
       });
       
       setYamlContent(response.data.yaml);
@@ -104,6 +113,39 @@ function ImageGenerationContent() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Check file size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    setReferenceImageFile(file);
+    setReferenceImageUrl(''); // Clear URL when file is selected
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReferenceImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setReferenceImageFile(null);
+    setReferenceImagePreview('');
+    setReferenceImageUrl('');
   };
 
   const handleGenerateFromYaml = async (yaml: string) => {
@@ -158,31 +200,94 @@ function ImageGenerationContent() {
               </button>
             </div>
 
-            {/* Reference Image URL Input */}
+            {/* Reference Image Input */}
             {inputMode === 'image' && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Reference Image URL</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="url"
-                      value={referenceImageUrl}
-                      onChange={(e) => setReferenceImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+              <div className="space-y-4">
+                {/* File Upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Upload Image</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    {referenceImagePreview ? (
+                      <div className="space-y-3">
+                        <img
+                          src={referenceImagePreview}
+                          alt="Reference"
+                          className="max-h-48 mx-auto rounded-lg"
+                        />
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            {referenceImageFile?.name}
+                          </span>
+                          <button
+                            onClick={clearImage}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer">
+                        <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, GIF up to 10MB
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
                   </div>
-                  <button
-                    onClick={handleAnalyzeImage}
-                    disabled={!referenceImageUrl || isAnalyzing}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-                  </button>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Enter an image URL and click "Analyze" to generate a YAML description
+
+                {/* URL Input (alternative) */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">OR</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Image URL</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="url"
+                        value={referenceImageUrl}
+                        onChange={(e) => {
+                          setReferenceImageUrl(e.target.value);
+                          setReferenceImageFile(null);
+                          setReferenceImagePreview('');
+                        }}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={!!referenceImageFile}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analyze Button */}
+                <button
+                  onClick={handleAnalyzeImage}
+                  disabled={(!referenceImageUrl && !referenceImagePreview) || isAnalyzing}
+                  className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAnalyzing ? 'Analyzing...' : 'Analyze Image'}
+                </button>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  Upload an image or enter a URL, then click "Analyze" to generate a YAML description
                 </p>
               </div>
             )}
@@ -242,7 +347,7 @@ function ImageGenerationContent() {
       {showYamlEditor && (
         <YamlEditor
           initialYaml={yamlContent}
-          referenceImage={referenceImageUrl}
+          referenceImage={referenceImagePreview || referenceImageUrl}
           onGenerate={handleGenerateFromYaml}
           onCancel={() => setShowYamlEditor(false)}
           isLoading={isGenerating}
